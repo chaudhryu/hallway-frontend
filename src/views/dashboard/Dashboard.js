@@ -164,12 +164,13 @@ const Dashboard = () => {
       for (const room of rooms) {
         const roomId = room.id;
         const response = await fetch(
-          `http://localhost:5001/api/bookings?startDateTime=${encodeURIComponent(
+          `https://hallway-backend.onrender.com/api/bookings?startDateTime=${encodeURIComponent(
             startDateTime
           )}&endDateTime=${encodeURIComponent(
             endDateTime
           )}&roomId=${encodeURIComponent(roomId)}`
         );
+        console.log(response)
         if (!response.ok) {
           console.error(`Network response was not ok for room ${roomId}`);
           continue;
