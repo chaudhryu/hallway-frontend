@@ -39,7 +39,7 @@ const BookingsList = ({ bookings, showRoomName = false }) => {
               scrollDirectionRef.current = (list.scrollTop >= maxScrollTop - 2) ? -1 : 1;
               // --- End Initial Direction ---
 
-              const scrollStep = 2;
+              const scrollStep = 2; // Adjusted scroll step from previous code
               const scrollInterval = 30;
 
               intervalRef.current = setInterval(() => {
@@ -163,6 +163,7 @@ const Dashboard = () => {
       const allBookings = {};
       for (const room of rooms) {
         const roomId = room.id;
+        // Updated fetch URL from previous version
         const response = await fetch(
           `https://hallway-backend.onrender.com/api/bookings?startDateTime=${encodeURIComponent(
             startDateTime
@@ -170,7 +171,7 @@ const Dashboard = () => {
             endDateTime
           )}&roomId=${encodeURIComponent(roomId)}`
         );
-        console.log(response)
+        // console.log(response) // Keep console log if needed for debugging
         if (!response.ok) {
           console.error(`Network response was not ok for room ${roomId}`);
           continue;
@@ -207,6 +208,7 @@ const Dashboard = () => {
 
   return (
     <>
+      {/* ======================= STYLE CHANGES ======================= */}
       <style>{`
          /* Ensure body takes full viewport height and uses flex */
          body, html {
@@ -214,7 +216,10 @@ const Dashboard = () => {
            margin: 0;
            padding: 0;
            overflow: hidden; /* Prevent viewport scrollbars */
-           font-family: sans-serif; /* Basic font */
+           /* --- NEW FONT FAMILY --- */
+           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+           /* --- NEW BASE TEXT COLOR --- */
+           color: #333333; /* Dark Grey */
          }
          #root {
            height: 100vh; /* Use viewport height */
@@ -225,53 +230,61 @@ const Dashboard = () => {
            flex-direction: column; /* Stack list container and footer */
            align-items: center; /* Center items horizontally */
          }
-         /* Container for the bookings list, constrained by viewport and footer */
+         /* Container for the bookings list */
          .bookings-list-container {
-             width: 90%; /* Adjust width */
-             max-width: 800px; /* Max width */
-             /* Calculate height: 100% viewport minus footer height */
+             width: 90%;
+             max-width: 800px;
              height: calc(100vh - 90px);
              display: flex;
              flex-direction: column;
-             justify-content: center; /* Center list box vertically */
-             overflow: hidden; /* Important: prevent this container from scrolling */
+             justify-content: center;
+             overflow: hidden;
              box-sizing: border-box;
-             padding: 20px 0; /* Add some vertical padding */
+             padding: 20px 0;
+             background-color: white; /* Ensure container is white */
          }
 
-         /* Styling for the list itself, allowing internal scroll */
+         /* Styling for the list itself */
          .bookings-list {
             list-style-type: none;
-            padding: 20px; /* Increased padding */
-            margin: 0; /* Remove margin */
-            font-size: 1.7rem; /* Slightly adjusted font size */
-            width: 100%; /* Take full width of container */
-            height: 100%; /* Take full height of the container's content box */
-            overflow-y: hidden; /* JS controls scroll, hide browser bar */
+            padding: 20px;
+            margin: 0;
+            font-size: 1.7rem;
+            width: 100%;
+            height: 100%;
+            overflow-y: hidden;
             text-align: center;
+            /* --- NEW BORDER COLOR --- */
+            border: 1px solid #cce0ff; /* Light Blue-Grey Border */
             box-sizing: border-box;
             border-radius: 8px;
-            line-height: 1.5; /* Improve readability */
-            /* Add smooth scrolling behavior for manual scroll */
+            background-color: white; /* Keep background white */
+            line-height: 1.5;
             scroll-behavior: smooth;
+            /* --- NEW DEFAULT TEXT COLOR FOR LIST ITEMS (times etc.) --- */
+            color: #333333; /* Dark Grey */
          }
          .bookings-list li {
-             margin-bottom: 25px; /* Increased spacing */
-             padding-bottom: 15px; /* Padding below text before border */
-             border-bottom: 1px solid #eee;
+             margin-bottom: 25px;
+             padding-bottom: 15px;
+             /* --- NEW SEPARATOR COLOR --- */
+             border-bottom: 1px solid #e6f0ff; /* Very Light Blue-Grey Separator */
          }
          .bookings-list li strong {
-             display: block; /* Make title block for better spacing */
-             margin-bottom: 5px; /* Space between title and time */
-             font-size: 1.8rem; /* Larger title */
+             display: block;
+             margin-bottom: 5px;
+             font-size: 1.8rem;
+             /* --- NEW TITLE COLOR --- */
+             color: #003366; /* Dark Blue */
          }
          .bookings-list li em {
-             font-size: 1.5rem; /* Smaller room name */
-             color: #555; /* Grey room name */
+             font-size: 1.5rem;
+             /* --- NEW ROOM NAME COLOR --- */
+             color: #666666; /* Medium Grey */
          }
          .bookings-list li:last-child {
              border-bottom: none;
-             margin-bottom: 0; /* No margin for last item */
+             margin-bottom: 0;
              padding-bottom: 0;
          }
 
@@ -279,17 +292,18 @@ const Dashboard = () => {
          .no-meetings-message {
              font-size: 2rem;
              text-align: center;
-             color: #555;
+             /* --- NEW MESSAGE COLOR --- */
+             color: #666666; /* Medium Grey */
              width: 100%;
              padding: 50px 0;
-             /* Center message within the container */
              height: 100%;
              display: flex;
              align-items: center;
              justify-content: center;
-             border: 1px solid #ccc; /* Match list border */
-             border-radius: 8px; /* Match list border-radius */
-             background-color: #f8f9fa; /* Match list background */
+             /* --- NEW BORDER COLOR --- */
+             border: 1px solid #cce0ff; /* Match list border */
+             border-radius: 8px;
+             background-color: white; /* Keep background white */
              box-sizing: border-box;
          }
 
@@ -299,14 +313,15 @@ const Dashboard = () => {
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 90px; /* Fixed height */
+            height: 90px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 25px; /* Slightly more padding */
+            padding: 0 25px;
             box-sizing: border-box;
             background-color: white;
-            border-top: 1px solid #ddd; /* Slightly darker border */
+            /* --- NEW BORDER COLOR --- */
+            border-top: 1px solid #cce0ff; /* Match list border */
             z-index: 10;
          }
          .footer-logo {
@@ -314,6 +329,7 @@ const Dashboard = () => {
              width: auto;
          }
        `}</style>
+       {/* ===================== END STYLE CHANGES ===================== */}
 
        {/* Container for the list */}
        <div className="bookings-list-container">
