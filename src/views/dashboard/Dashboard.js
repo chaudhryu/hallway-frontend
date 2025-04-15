@@ -1,13 +1,8 @@
-import React, { useState, useEffect } from 'react'
-// Only import components needed for the list and logos
-
-// Import only the needed logo images
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react'
 import metroLogo from 'src/assets/images/metroITSLogo.png'
 import focusedForward from 'src/assets/images/focusedForward.png'
 
-// A simplified BookingsList that does NOT auto-scroll
-const BookingsList = ({ bookings, showRoomName = false }) => {
-  // Function to format the time
+const BookingsList = ({ bookings, showRoomName = false, fontSize }) => {
   const formatTime = (date) => {
     return new Intl.DateTimeFormat('en-US', {
       hour: 'numeric',
@@ -20,7 +15,7 @@ const BookingsList = ({ bookings, showRoomName = false }) => {
   }
 
   return (
-    <ul className="bookings-list">
+    <ul className="bookings-list" style={{ fontSize: `${fontSize}px` }}>
       {bookings.map((booking) => {
         const startTime = new Date(booking.timeFrom)
         const endTime = new Date(booking.timeTo)
@@ -52,8 +47,9 @@ const Dashboard = () => {
     { id: 140, name: 'West Wing (05-20)' },
   ]
 
-  const [bookings, setBookings] = useState({})
   const [aggregatedBookings, setAggregatedBookings] = useState([])
+  const [fontSize, setFontSize] = useState(20) // Starting font size
+  const containerRef = useRef(null)
 
   const fetchBookings = async () => {
     try {
@@ -67,24 +63,26 @@ const Dashboard = () => {
         return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
       }
 
-      const startDateTime = formatDateTime(new Date())
+      const now = new Date()
       const endOfDay = new Date()
       endOfDay.setHours(23, 59, 59, 999)
+
+      const startDateTime = formatDateTime(now)
       const endDateTime = formatDateTime(endOfDay)
 
       const allBookings = {}
+
       for (const room of rooms) {
-        const roomId = room.id
         const response = await fetch(
           `https://hallway-backend.onrender.com/api/bookings?startDateTime=${encodeURIComponent(
             startDateTime
           )}&endDateTime=${encodeURIComponent(
             endDateTime
-          )}&roomId=${encodeURIComponent(roomId)}`
+          )}&roomId=${encodeURIComponent(room.id)}`
         )
 
         if (!response.ok) {
-          console.error(`Network response was not ok for room ${roomId}`)
+          console.error(`Network response was not ok for room ${room.id}`)
           continue
         }
 
@@ -92,15 +90,12 @@ const Dashboard = () => {
         const roomBookings = data.bookings || data
 
         if (roomBookings && roomBookings.length > 0) {
-          // Attach roomName
-          roomBookings.forEach((booking) => {
-            booking.roomName = room.name
-          })
-          allBookings[roomId] = roomBookings
+          roomBookings.forEach((b) => (b.roomName = room.name))
+          allBookings[room.id] = roomBookings
         }
       }
-      setBookings(allBookings)
 
+      // Flatten and sort
       const aggregated = Object.values(allBookings).flat()
       aggregated.sort((a, b) => new Date(a.timeFrom) - new Date(b.timeFrom))
       setAggregatedBookings(aggregated)
@@ -112,10 +107,7 @@ const Dashboard = () => {
   useEffect(() => {
     fetchBookings()
     const fetchInterval = setInterval(fetchBookings, 3600000) // 1 hour
-    const refreshInterval = setInterval(
-      () => window.location.reload(),
-      600000 // 10 minutes
-    )
+    const refreshInterval = setInterval(() => window.location.reload(), 600000) // 10 minutes
 
     return () => {
       clearInterval(fetchInterval)
@@ -123,121 +115,161 @@ const Dashboard = () => {
     }
   }, [])
 
+  // Measure and reduce font size if overflowing
+  useLayoutEffect(() => {
+    if (!containerRef.current) return
+    const container = containerRef.current
+
+    // Reset to starting font size each time bookings change
+    // so we can shrink from the original size again, if needed.
+    let currentFontSize = 20
+    setFontSize(currentFontSize)
+
+    // We'll check overflow in a small timeout so the DOM updates with new font size
+    const adjustFont = () => {
+      // Keep trying to shrink until it fits or we hit min size
+      const MIN_SIZE = 10
+      while (isOverflowing(container) && currentFontSize > MIN_SIZE) {
+        currentFontSize--
+        setFontSize(currentFontSize)
+        // Force a reflow by reading offsetHeight (hacky but simple)
+        container.offsetHeight // eslint-disable-line no-unused-expressions
+      }
+    }
+
+    // We can do a short timeout or force sync. 
+    // Let's do a short setTimeout so the initial render happens, then we measure.
+    const timer = setTimeout(adjustFont, 0)
+    return () => clearTimeout(timer)
+  }, [aggregatedBookings])
+
+  /**
+   * Checks if the container's scrollWidth/scrollHeight 
+   * exceed its clientWidth/clientHeight.
+   */
+  function isOverflowing(el) {
+    return el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth
+  }
+
   return (
     <>
-      {/* ======================= STYLE CHANGES ======================= */}
       <style>{`
-         /* Ensure body takes full viewport height, no forced overflow hidden */
-         body, html {
-           height: 100%;
-           margin: 0;
-           padding: 0;
-           /* Removed overflow: hidden to allow the entire list to be visible if it grows. */
-           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-           color: #333333;
-         }
-         #root {
-           min-height: 100vh;
-           margin: 0;
-           padding: 0;
-           background-color: white;
-           display: flex;
-           flex-direction: column; 
-           align-items: center; 
-         }
+        /* 
+          Remove scrolling from the entire page. 
+          Anything that doesn't fit is cut off. 
+        */
+        html, body {
+          margin: 0;
+          padding: 0;
+          height: 100%;
+          overflow: hidden;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          color: #333;
+        }
+        #root {
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          background-color: white;
+        }
 
-         /* Container for the bookings list */
-         .bookings-list-container {
-             width: 90%;
-             max-width: 800px;
-             /* Removed fixed height to allow list to grow */
-             padding: 20px 0;
-             box-sizing: border-box;
-             background-color: white;
-         }
+        /* Container for the list above the footer */
+        .bookings-list-container {
+          flex: 1;
+          height: calc(100vh - 90px);
+          box-sizing: border-box;
+          padding: 20px 0;
+          background-color: white;
+          overflow: hidden; /* no scrolling - cut off if too big */
+        }
 
-         .bookings-list {
-            list-style-type: none;
-            padding: 20px;
-            margin: 0;
-            font-size: 1.7rem;
-            width: 100%;
-            /* Removed overflow hidden and fixed height */
-            text-align: center;
-            border: 1px solid #cce0ff; 
-            box-sizing: border-box;
-            border-radius: 8px;
-            background-color: white;
-            line-height: 1.5;
-            color: #333333;
-         }
-         .bookings-list li {
-             margin-bottom: 25px;
-             padding-bottom: 15px;
-             border-bottom: 1px solid #e6f0ff;
-         }
-         .bookings-list li strong {
-             display: block;
-             margin-bottom: 5px;
-             font-size: 1.8rem;
-             color: #003366;
-         }
-         .bookings-list li em {
-             font-size: 1.5rem;
-             color: #666666;
-         }
-         .bookings-list li:last-child {
-             border-bottom: none;
-             margin-bottom: 0;
-             padding-bottom: 0;
-         }
+        /* 
+          Use flexbox, wrap from left to right.
+          We'll shrink font if content doesn't fit.
+        */
+        .bookings-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
 
-         .no-meetings-message {
-             font-size: 2rem;
-             text-align: center;
-             color: #666666;
-             width: 100%;
-             padding: 50px 0;
-             border: 1px solid #cce0ff;
-             border-radius: 8px;
-             background-color: white;
-             box-sizing: border-box;
-         }
+          margin: 0;
+          padding: 20px;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
 
-         /* Footer Logo Styles */
-         .footer-logos {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 90px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 25px;
-            box-sizing: border-box;
-            background-color: white;
-            border-top: 1px solid #cce0ff;
-            z-index: 10;
-         }
-         .footer-logo {
-             height: 60px;
-             width: auto;
-         }
-       `}</style>
-      {/* ===================== END STYLE CHANGES ===================== */}
+          border: 1px solid #cce0ff;
+          border-radius: 8px;
+          background: #fff;
+          box-sizing: border-box;
+        }
 
-      <div className="bookings-list-container">
+        .bookings-list li {
+          list-style: none;
+          width: 25%;
+          box-sizing: border-box;
+          border-bottom: 1px solid #e6f0ff;
+          padding-bottom: 0.5rem;
+        }
+
+        .bookings-list li strong {
+          display: block;
+          color: #003366;
+          margin-bottom: 0.3rem;
+        }
+        .bookings-list li em {
+          color: #666;
+        }
+
+        .no-meetings-message {
+          font-size: 1.5rem;
+          text-align: center;
+          color: #666;
+          width: 100%;
+          padding: 50px 0;
+          border: 1px solid #cce0ff;
+          border-radius: 8px;
+          background-color: white;
+          box-sizing: border-box;
+        }
+
+        .footer-logos {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: 90px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0 25px;
+          box-sizing: border-box;
+          background-color: white;
+          border-top: 1px solid #cce0ff;
+          z-index: 10;
+        }
+        .footer-logo {
+          height: 60px;
+          width: auto;
+        }
+      `}</style>
+
+      <div className="bookings-list-container" ref={containerRef}>
         {aggregatedBookings.length > 0 ? (
-          <BookingsList bookings={aggregatedBookings} showRoomName={true} />
+          <BookingsList
+            bookings={aggregatedBookings}
+            showRoomName={true}
+            fontSize={fontSize}
+          />
         ) : (
-          <p className="no-meetings-message">
-            No meetings scheduled for today.
-          </p>
+          <p className="no-meetings-message">No meetings scheduled for today.</p>
         )}
       </div>
 
-
+      <div className="footer-logos">
+        <img src={metroLogo} alt="Metro Logo" className="footer-logo" />
+        <img src={focusedForward} alt="Focused Forward Logo" className="footer-logo" />
+      </div>
     </>
   )
 }
