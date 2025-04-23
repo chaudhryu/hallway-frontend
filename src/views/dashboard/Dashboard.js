@@ -266,10 +266,10 @@ const Dashboard = () => {
         )}
       </div>
 
-      <div className="footer-logos">
+    {/*  <div className="footer-logos">
         <img src={metroLogo} alt="Metro Logo" className="footer-logo" />
         <img src={focusedForward} alt="Focused Forward Logo" className="footer-logo" />
-      </div>
+      </div>*/}
     </>
   )
 }
