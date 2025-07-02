@@ -45,6 +45,10 @@ const Dashboard = () => {
     { id: 2194, name: 'Innovation Lab (05-92)' },
     { id: 139, name: 'Valencia (05-43)' },
     { id: 140, name: 'West Wing (05-20)' },
+    { id: 180, name: 'Huddle A (05-44)' },
+    { id: 163, name: ' Huddle B (05-67)' },
+    { id: 1609, name: 'Huddle C (05-98)' },
+    { id: 2189, name: 'Huddle Room D' },
   ]
 
   const [aggregatedBookings, setAggregatedBookings] = useState([])
